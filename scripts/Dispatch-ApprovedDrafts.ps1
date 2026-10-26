@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$Recipient = "madhusudan.rai@brickred.in",
     [switch]$EnableSending
 )
@@ -61,8 +61,21 @@ foreach ($file in $drafts) {
     $deliveryFile = Join-Path $deliveryDir "draft-$id-delivery.json"
 
     if (!(Test-Path $deliveryFile)) {
-        Write-Host "SKIP $id : Delivery not prepared"
-        continue
+        Write-Host "PREPARING $id"
+
+        try {
+            $uri = "http://127.0.0.1:5075/api/draft-delivery/prepare/$id"
+            Invoke-RestMethod -Uri $uri -Method Post -ErrorAction Stop | Out-Null
+        }
+        catch {
+            Write-Host "SKIP $id : Automatic preparation failed"
+            continue
+        }
+
+        if (!(Test-Path $deliveryFile)) {
+            Write-Host "SKIP $id : Delivery record missing"
+            continue
+        }
     }
 
     $delivery = Get-Content $deliveryFile -Raw | ConvertFrom-Json
@@ -102,5 +115,3 @@ foreach ($file in $drafts) {
 }
 
 Write-Host "DISPATCH COMPLETE"
-
-

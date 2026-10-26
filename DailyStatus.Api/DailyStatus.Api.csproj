@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>7b0f4ade-788b-4b19-88fa-7f88f7a443ca</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DailyStatus.Application\DailyStatus.Application.csproj" />
+    <ProjectReference Include="..\DailyStatus.Infrastructure\DailyStatus.Infrastructure.csproj" />
+    <ProjectReference Include="..\DailyStatus.Agents\DailyStatus.Agents.csproj" />
+  </ItemGroup>
+</Project>

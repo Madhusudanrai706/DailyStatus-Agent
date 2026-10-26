@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DailyStatus.Agents/DailyStatus.Agents.csproj" />
+  <Project Path="DailyStatus.Application/DailyStatus.Application.csproj" />
+  <Project Path="DailyStatus.Domain/DailyStatus.Domain.csproj" />
+  <Project Path="DailyStatus.Infrastructure/DailyStatus.Infrastructure.csproj" />
+</Solution>

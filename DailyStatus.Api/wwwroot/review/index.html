@@ -1,0 +1,315 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brickred Daily Status Review</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f4f6f9;color:#17202a}
+header{background:#192d46;color:white;padding:22px 30px}
+main{max-width:1180px;margin:24px auto;padding:0 20px}
+h1{margin:0;font-size:24px}
+h2{font-size:19px}
+.sub{color:#d4dce7;margin-top:6px}
+.panel{background:white;padding:22px;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 9px #0000000d}
+.stats{display:flex;gap:14px;flex-wrap:wrap}
+.stat{background:#eef3fa;padding:15px 20px;border-radius:9px;min-width:130px}
+.stat strong{display:block;font-size:26px}
+.item{border:1px solid #dbe1e8;border-radius:9px;padding:13px;margin:10px 0}
+.meta{font-size:12px;color:#596579;margin-top:7px}
+label{display:flex;gap:12px;align-items:flex-start}
+textarea{width:100%;min-height:280px;box-sizing:border-box;padding:14px;border:1px solid #b9c5d2;border-radius:8px;font:14px/1.6 Consolas,monospace}
+button{border:0;background:#1763b0;color:white;padding:12px 20px;border-radius:7px;cursor:pointer;font-weight:600;margin:8px 8px 8px 0}
+button.secondary{background:#56677b}
+.notice{background:#fff3d6;padding:12px;border-radius:8px;margin:15px 0}
+#message{font-weight:600}
+</style>
+</head>
+<body>
+<header>
+<h1>Brickred Daily Status Agent</h1>
+<div class="sub">Evidence Review &amp; Draft Workspace Ã¢â‚¬â€ Local MVP</div>
+</header>
+<main>
+<div class="panel">
+<h2>Evidence Overview</h2>
+<div id="stats" class="stats"></div>
+<div class="notice">Mail metadata does not prove completed work. Review each item before including it. Saving a draft does not approve or send it.</div>
+</div>
+<div class="panel">
+<h2>Review Evidence</h2>
+<button class="secondary" onclick="selectAll(true)">Select All</button>
+<button class="secondary" onclick="selectAll(false)">Exclude All</button>
+<div id="activities">Loading...</div>
+</div>
+<div class="panel">
+<h2>Daily Status Draft</h2>
+<button class="secondary" onclick="loadLatestAiDraft()">Load Latest AI Draft</button>
+<button id="selectedAiButton" type="button" onclick="generateSelectedAiDraft()">Generate Evidence-Based Draft</button>
+<p>Draft text is editable. Only selected evidence is referenced.</p>
+<textarea id="draft" aria-label="Daily status draft"></textarea>
+<div>
+<button onclick="saveDraft()">Save Pending-Review Draft</button>
+</div>
+<p id="message"></p>
+</div>
+</main>
+<script>
+let activities = [];
+const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c]));
+async function load() {
+  try {
+    const response = await fetch('/api/evidence',{cache:'no-store'});
+    if (!response.ok) throw new Error('Evidence unavailable');
+    const data = await response.json();
+    activities = data.Activities || [];
+    const ado = activities.filter(x=>x.SourceType==='AzureDevOps').length;
+    const mail = activities.filter(x=>x.SourceType==='OutlookMail').length;
+    const cal = activities.filter(x=>x.SourceType==='OutlookCalendar').length;
+    document.getElementById('stats').innerHTML =
+      [['Total',activities.length],['ADO',ado],['Mail',mail],['Calendar',cal]]
+      .map(([name,count])=>`<div class="stat"><strong>${count}</strong>${name}</div>`).join('');
+    document.getElementById('activities').innerHTML = activities.map((a,i)=>`
+      <div class="item">
+        <label>
+          <input type="checkbox" class="include" data-index="${i}" ${a.SourceType==='AzureDevOps'?'checked':''}>
+          <span>
+            <strong>${escapeHtml(a.Title || a.ActivityId)}</strong>
+            <div class="meta">
+              ${escapeHtml(a.SourceType)} Ã‚Â· ${escapeHtml(a.Category)} Ã‚Â·
+              ${escapeHtml(a.EvidenceId)}
+            </div>
+          </span>
+        </label>
+      </div>`).join('');
+  } catch (e) {
+    document.getElementById('activities').textContent=e.message;
+  }
+}
+function selectAll(checked) {
+  document.querySelectorAll('.include').forEach(x=>x.checked=checked);
+}
+function selected() {
+  return [...document.querySelectorAll('.include:checked')]
+    .map(x=>activities[Number(x.dataset.index)]);
+}
+function generateDraft() {
+  const items=selected();
+  const ado=items.filter(x=>x.SourceType==='AzureDevOps');
+  const mail=items.filter(x=>x.SourceType==='OutlookMail');
+  const cal=items.filter(x=>x.SourceType==='OutlookCalendar');
+  const lines=['DAILY STATUS Ã¢â‚¬â€ DRAFT (NOT APPROVED)',''];
+  lines.push('IN PROGRESS');
+  const inProgress=ado.filter(x=>x.Category==='InProgress');
+  if(inProgress.length) inProgress.forEach(x=>lines.push(
+    '- '+x.Title+' [Evidence: '+x.EvidenceId+']'));
+  else lines.push('- No verified in-progress work selected');
+  lines.push('','COMPLETED');
+  const completed=ado.filter(x=>x.Category==='Completed');
+  if(completed.length) completed.forEach(x=>lines.push(
+    '- '+x.Title+' [Evidence: '+x.EvidenceId+']'));
+  else lines.push('- No verified completed work selected');
+  lines.push('','BLOCKERS');
+  const blocked=ado.filter(x=>x.Category==='Blocked');
+  if(blocked.length) blocked.forEach(x=>lines.push(
+    '- '+x.Title+' [Evidence: '+x.EvidenceId+']'));
+  else lines.push('- No verified blockers selected');
+  lines.push('','MAIL EVIDENCE REQUIRING REVIEW');
+  if(mail.length) lines.push('- '+mail.length+' selected email metadata records; actions and outcomes not verified');
+  else lines.push('- None selected');
+  lines.push('','MEETINGS');
+  if(cal.length) lines.push('- '+cal.length+' selected meeting records; outcomes not verified');
+  else lines.push('- None selected');
+  lines.push('','Approval: Pending. Publishing: Disabled.');
+  document.getElementById('draft').value=lines.join('\n');
+}
+async function saveDraft() {
+  const text=document.getElementById('draft').value.trim();
+  if(!text) {document.getElementById('message').textContent='Generate or enter draft text first.';return;}
+  const includedIds=selected().map(x=>x.ActivityId);
+  const response=await fetch('/api/draft',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text,includedIds})
+  });
+  const data=await response.json();
+  document.getElementById('message').textContent=response.ok
+    ? 'Draft saved. Status: PendingReview. Not sent.'
+    : 'Save failed: '+(data.error||'Unknown error');
+}
+load();
+</script>
+<script id="latestAiDraftData" type="application/json">{"text":"Daily Status Report  \nDate: 2026-10-22\n\nActivity Summary:  \n- Progress continued on the implementation of the Daily Status Agent API with configuration of state mapping. The work remains ongoing.\n\nCurrent Status:  \n- Azure DevOps work item for the Daily Status Agent API is currently in progress, indicating active development but not completion.  \n- Multiple email messages were received and reviewed; however, their actionability and relevance have not been verified.\n\nEvidence:  \n- Azure DevOps: Work item titled \"Implement Daily Status Agent API\" is marked InProgress with configured state mapping.  \n- Numerous Outlook emails collected with subjects including status reports, messages from colleagues, reminders, and informational content. All require confirmation for their relevance or action taken.\n\nNeeds Human Review:  \n- Confirmation is required regarding actions or responses needed related to the following Outlook emails (selection from the batch):  \n  Ã¢â‚¬Â¢ Brickred Daily Status - 2026-10-22  \n  Ã¢â‚¬Â¢ Keshav Saini sent a message  \n  Ã¢â‚¬Â¢ Azure DevOps personal access token added  \n  Ã¢â‚¬Â¢ Urgent Security Reminder: Beware of Fraudulent Payment Requests and Phishing Alert!  \n  Ã¢â‚¬Â¢ Multiple birthday and anniversary notifications  \n  Ã¢â‚¬Â¢ Various informational and motivational messages  \n- Verification needed to determine if any of these emails involve task completions or require follow-up.\n\nBlockers:  \n- No explicit blockers identified at this time; however, pending confirmation on email action items may impact prioritization and progress.","includedIds":["OUTLOOK-MAIL-04302AD05AF58561","OUTLOOK-MAIL-B9E5C0AE146DE4F2","OUTLOOK-MAIL-0D2497AD4181BB9A","OUTLOOK-MAIL-9D7AA8C6409D4A18","OUTLOOK-MAIL-F99F6FDCDA1709E7","OUTLOOK-MAIL-F5AB9A980DB020FF","OUTLOOK-MAIL-EF2738D3DBD3FF00","OUTLOOK-MAIL-9DD2A384FA9F9DC9","OUTLOOK-MAIL-40236F4890C6B677","OUTLOOK-MAIL-4DEA493F8FC4F290","OUTLOOK-MAIL-667690ECE90BE77C","OUTLOOK-MAIL-EDD271759229ACB6","OUTLOOK-MAIL-C693239D46A879B2","OUTLOOK-MAIL-3E45B5B9788D3478","OUTLOOK-MAIL-5874EBCF2484DBC3","OUTLOOK-MAIL-DA8240AB3FCF844D","OUTLOOK-MAIL-01FCCB61133633B9","OUTLOOK-MAIL-59F2E5C1AB3CE26D","OUTLOOK-MAIL-4CC08FCD9A2A46A7","OUTLOOK-MAIL-4B5E9F2C6AF0A3ED","OUTLOOK-MAIL-8732A0F99C31EFB0","OUTLOOK-MAIL-D8121B3891364CA0","OUTLOOK-MAIL-47371463676805A7","ADO-WORKITEM-1"]}</script>
+<script>
+function loadLatestAiDraft() {
+    const data = JSON.parse(
+        document.getElementById('latestAiDraftData').textContent
+    );
+
+    document.getElementById('draft').value = data.text;
+
+    const ids = new Set(data.includedIds);
+
+    document.querySelectorAll('input[type="checkbox"]').forEach(box => {
+        const id = activities[Number(box.dataset.index)]?.ActivityId;
+        box.checked = ids.has(id);
+    });
+
+    document.getElementById('message').textContent =
+        'AI draft loaded. Edit and save for review. Not approved or sent.';
+}
+</script>
+<div style="margin-top:18px;padding:16px;border:1px solid #d0d7df;border-radius:8px">
+  <h3>Local Draft Review (Development Only)</h3>
+  <p>Save your edited draft first. Enter its Draft ID to review it.</p>
+  <input id="reviewDraftId" type="text"
+         placeholder="Saved Draft ID (GUID)"
+         style="width:100%;padding:10px;box-sizing:border-box">
+  <p>
+    <label>
+      <input type="checkbox" id="reviewConfirm">
+      I have reviewed the report and its supporting evidence.
+    </label>
+  </p>
+  <button onclick="reviewLocalDraft('approve')">Approve Draft</button>
+  <button class="secondary" onclick="reviewLocalDraft('reject')">Reject Draft</button>
+  <p id="reviewResult"></p>
+</div>
+
+<script>
+async function reviewLocalDraft(action) {
+  const id = document.getElementById('reviewDraftId').value.trim();
+  const confirmed = document.getElementById('reviewConfirm').checked;
+  const result = document.getElementById('reviewResult');
+
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    result.textContent = 'Enter a valid saved Draft ID.';
+    return;
+  }
+
+  if (!confirmed) {
+    result.textContent = 'Review confirmation is required.';
+    return;
+  }
+
+  if (!window.confirm(
+      'Confirm ' + action.toUpperCase() +
+      ' for draft ' + id + '? This action cannot be reversed.'
+  )) return;
+
+  try {
+    const response = await fetch(
+      '/api/local-review/' + encodeURIComponent(id) + '/' + action,
+      {
+        method: 'POST',
+        headers: { 'X-Review-Confirmed': 'true' }
+      }
+    );
+
+    const data = await response.json();
+
+    result.textContent = response.ok
+      ? 'Draft ' + data.status + '. Published: false. Email not sent.'
+      : 'Review failed: ' + (data.error || response.status);
+
+    if (response.ok) {
+      document.getElementById('reviewConfirm').checked = false;
+    }
+  } catch (error) {
+    result.textContent = 'Request failed: ' + error.message;
+  }
+}
+</script>
+<script>
+async function generateSelectedAiDraft() {
+  const ids = Array.from(
+  document.querySelectorAll('input.include:checked')
+).map(box => {
+  const index = Number(box.dataset.index);
+  return activities[index]?.ActivityId;
+}).filter(Boolean);
+
+  if (!ids || ids.length === 0) {
+    alert('Select at least one evidence record.');
+    return;
+  }
+
+  const button = document.getElementById('selectedAiButton');
+  if (button) button.disabled = true;
+
+  try {
+    const response = await fetch('/api/status/ai/generate-combined', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ includedIds: ids })
+    });
+
+    const raw = await response.text();
+let data;
+
+try {
+  data = JSON.parse(raw);
+} catch {
+  throw new Error(
+    'Server returned HTTP ' + response.status +
+    ' with non-JSON response. Check API terminal.'
+  );
+}
+
+    if (!response.ok) {
+      throw new Error(data.error || data.detail || response.status);
+    }
+
+    const editor = document.querySelector(
+      '#draftText, #draft, textarea'
+    );
+
+    if (!editor) throw new Error('Draft editor not found.');
+
+    editor.value = data.aiSummary;
+
+    alert('AI draft generated using ' +
+          data.evidenceCount + ' selected evidence record(s).');
+
+  } catch (error) {
+    alert('AI generation failed: ' + error.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+</script>
+<section style="margin:24px 0;padding:18px;border:1px solid #ddd;border-radius:10px">
+  <h3>Prepared Delivery History</h3>
+  <button type="button" onclick="loadDraftDeliveryHistory()">
+    Refresh Delivery History
+  </button>
+  <pre id="draftDeliveryHistory" style="white-space:pre-wrap"></pre>
+</section>
+<script>
+async function loadDraftDeliveryHistory() {
+  const box = document.getElementById("draftDeliveryHistory");
+  box.textContent = "Loading...";
+  try {
+    const response = await fetch("/api/draft-delivery/history");
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const items = await response.json();
+    box.textContent = items.length
+      ? items.map(x =>
+          "Draft: " + x.DraftId +
+          "\nStatus: " + x.Status +
+          " / " + x.DeliveryStatus +
+          "\nEmail Sent: " + x.EmailSent +
+          "\nPrepared: " + x.PreparedAt
+        ).join("\n\n")
+      : "No prepared deliveries.";
+  } catch (error) {
+    box.textContent = "Error: " + error.message;
+  }
+}
+loadDraftDeliveryHistory();
+</script>
+</body>
+</html>
+

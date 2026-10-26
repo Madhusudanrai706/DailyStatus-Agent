@@ -1,0 +1,58 @@
+﻿**/bin/
+**/obj/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+.env
+.env.*
+!.env.example
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/secrets.json
+*.pfx
+*.pem
+*.key
+data/
+**/data/
+*.eml
+logs/
+*.log
+*.bak
+*.step*.bak
+*.tmp
+Thumbs.db
+.DS_Store
+
+# Deployment artifacts and local backups
+azure-publish/
+azure-backups/
+azure-access-logs.zip
+checkpoints/
+code-backups/
+extracted-logs/
+email-previews/
+
+# Generated private reports
+**/Reports/
+**/WorkflowReports/
+**/DeliveryHistory/
+
+# Backup files
+*.bak*
+*.backup
+*.backup-*
+*.preview-backup
+
+# Private configuration
+**/appsettings.*.json
+!**/appsettings.json
+
+
+# Additional backup files
+*backup*
+
+
+**/appsettings.json
+

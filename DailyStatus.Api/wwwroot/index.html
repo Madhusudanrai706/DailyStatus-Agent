@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brickred | Daily Status Agent</title>
+<style>
+:root{--navy:#101b30;--red:#d33d49;--bg:#f5f7fb;--ink:#17233a;--muted:#718096;--line:#e5eaf1}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:252px;background:var(--navy);color:white;padding:30px 20px;flex-shrink:0}
+.brand{font-size:23px;font-weight:800;letter-spacing:-.6px;margin-bottom:7px}
+.brand span{color:#ff6570}
+.brand-sub{font-size:11px;color:#9aaac2;letter-spacing:1.4px;text-transform:uppercase}
+.nav{margin-top:55px}
+.nav-item{padding:14px 16px;border-radius:10px;color:#aab7cb;margin-bottom:9px;font-size:14px}
+.nav-item.active{background:#29364d;color:white;border-left:3px solid var(--red)}
+.sidebar-foot{margin-top:75px;padding-top:20px;border-top:1px solid #344158;font-size:12px;color:#aab7cb}
+.main{flex:1;min-width:0;padding:34px 42px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:32px}
+.eyebrow{font-size:12px;font-weight:700;color:var(--red);letter-spacing:1.6px;text-transform:uppercase}
+h1{font-size:30px;letter-spacing:-1px;margin:8px 0}
+.subtitle{font-size:14px;color:var(--muted)}
+.avatar{background:#e9edf5;border-radius:50%;height:44px;width:44px;display:grid;place-items:center;font-weight:800;color:#36445c}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:17px;margin-bottom:28px}
+.stat{background:white;border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 5px 18px #15253b06}
+.stat-label{color:var(--muted);font-size:12px;font-weight:600}
+.stat-value{font-size:32px;font-weight:800;margin-top:12px;letter-spacing:-1px}
+.stat-foot{font-size:11px;color:#97a3b6;margin-top:9px}
+.panel{background:white;border:1px solid var(--line);border-radius:15px;padding:25px;margin-bottom:25px;box-shadow:0 5px 18px #15253b05}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:21px}
+h2{font-size:18px;margin:0;letter-spacing:-.4px}
+.toolbar{display:flex;gap:11px;align-items:center;flex-wrap:wrap}
+input,select{border:1px solid #dce3ed;border-radius:9px;padding:12px 13px;background:white;color:var(--ink);font:inherit;font-size:13px;max-width:100%}
+button{border:0;border-radius:9px;padding:12px 17px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;background:var(--red);color:white;transition:filter .15s}
+button:hover{filter:brightness(.94)}
+button:disabled{opacity:.55;cursor:wait}
+.btn-light{background:#eef1f6;color:#35435b}
+.btn-green{background:#13834c}
+.btn-red{background:#d33d49}
+#message{font-size:13px;margin-top:14px;min-height:17px}
+.report-list{display:grid;gap:15px}
+.report{border:1px solid var(--line);border-radius:12px;padding:21px;background:#fff}
+.report-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.report-title{font-weight:750;font-size:15px}
+.meta{font-size:12px;color:var(--muted);margin:10px 0 16px}
+.badge{font-size:11px;font-weight:750;border-radius:20px;padding:7px 12px}
+.Approved{background:#e4f8ed;color:#147746}
+.Rejected{background:#ffe8e8;color:#c3343c}
+.Draft{background:#fff3db;color:#a16b00}
+.summary{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.75;color:#45516a;background:#f8fafd;border:1px solid #edf1f6;border-radius:9px;padding:18px;font-family:inherit}
+.actions{display:flex;gap:9px;margin-top:16px}
+.empty{color:var(--muted);font-size:14px}
+.filterbar{display:flex;gap:10px;flex-wrap:wrap}
+@media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}.main{padding:25px}}
+@media(max-width:650px){.layout{display:block}.sidebar{width:100%;padding:18px}.nav,.sidebar-foot{display:none}.main{padding:18px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat{padding:15px}.stat-value{font-size:25px}h1{font-size:24px}.panel{padding:16px}}
+.report-details{margin-top:14px}.report-details>summary{cursor:pointer;color:#b82e35;font-weight:700;font-size:13px;padding:12px;background:#f8fafd;border-radius:8px}.report-details[open]>summary{margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="brand">brickred<span>.</span></div>
+<div class="brand-sub">Intelligent Operations</div>
+<div class="nav">
+<div class="nav-item active">Overview</div>
+<div class="nav-item">AI Status Reports</div>
+<div class="nav-item">Approval Workflow</div>
+<div class="nav-item">Azure DevOps</div>
+</div>
+<div class="sidebar-foot">DAILY STATUS AGENT<br>Brickred Group</div>
+</aside>
+<main class="main">
+<div class="top">
+<div>
+<div class="eyebrow">Operations Dashboard</div>
+<h1>Daily Status Overview</h1>
+<div class="subtitle">AI-powered activity intelligence and reporting</div>
+</div>
+<div class="avatar">BR</div>
+</div>
+
+<div class="stats">
+<div class="stat"><div class="stat-label">Total Reports</div><div class="stat-value" id="total">0</div><div class="stat-foot">All generated reports</div></div>
+<div class="stat"><div class="stat-label">Approved</div><div class="stat-value" id="approved">0</div><div class="stat-foot">Ready for delivery</div></div>
+<div class="stat"><div class="stat-label">Pending Review</div><div class="stat-value" id="draft">0</div><div class="stat-foot">Awaiting approval</div></div>
+<div class="stat"><div class="stat-label">Rejected</div><div class="stat-value" id="rejected">0</div><div class="stat-foot">Not approved</div></div>
+</div>
+
+<section class="panel">
+<div class="panel-head"><h2>Generate AI Status Report</h2></div>
+<div class="toolbar">
+<input type="date" id="reportDate" aria-label="Report date">
+<button id="generateBtn" onclick="generateReport()">Generate AI Draft</button>
+<button class="btn-light" onclick="loadReports()">Refresh Reports</button>
+</div>
+<div id="message" role="status" aria-live="polite"></div>
+</section>
+
+<section class="panel">
+<div class="panel-head">
+<h2>Report Management</h2>
+<div class="filterbar">
+<input id="search" placeholder="Search reports..." oninput="renderReports()">
+<select id="filter" onchange="renderReports()" aria-label="Filter status">
+<option value="All">All Statuses</option>
+<option value="Draft">Draft</option>
+<option value="Approved">Approved</option>
+<option value="Rejected">Rejected</option>
+</select>
+</div>
+</div>
+<div id="reports" class="report-list"><p class="empty">Loading reports...</p></div>
+</section>
+<section style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-top:20px;">
+ <h3 style="margin-top:0;">Email Delivery History</h3>
+ <div style="overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;text-align:left;font-size:13px;">
+   <thead>
+    <tr style="border-bottom:1px solid #e2e8f0;">
+     <th style="padding:12px;">Report Date</th>
+     <th style="padding:12px;">Recipient</th>
+     <th style="padding:12px;">Channel</th>
+     <th style="padding:12px;">Status</th>
+     <th style="padding:12px;">Sent / Created At</th>
+    </tr>
+   </thead>
+   <tbody id="deliveryHistoryTable"></tbody>
+  </table>
+ </div>
+</section>
+</main>
+</div>
+<script>
+let allReports=[];
+let deliveryHistory=[];
+
+function renderDeliveryHistory(){
+ const tbody=document.getElementById("deliveryHistoryTable");
+ if(!tbody)return;
+ tbody.replaceChildren();
+
+ if(!deliveryHistory.length){
+  const tr=document.createElement("tr");
+  const td=document.createElement("td");
+  td.colSpan=5;
+  td.textContent="No delivery records found.";
+  td.style.padding="14px";
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+  return;
+ }
+
+ for(const d of deliveryHistory){
+  const tr=document.createElement("tr");
+  tr.style.borderBottom="1px solid #edf1f5";
+
+  const values=[
+   d.reportDate||"-",
+   d.recipient||"-",
+   d.channel||"-",
+   d.deliveryStatus||"-",
+   d.sentAtUtc||d.createdAtUtc
+    ?new Date(d.sentAtUtc||d.createdAtUtc).toLocaleString()
+    :"-"
+  ];
+
+  for(const value of values){
+   const td=document.createElement("td");
+   td.style.padding="12px";
+   td.textContent=value;
+   tr.appendChild(td);
+  }
+  tbody.appendChild(tr);
+ }
+}
+async function loadDeliveryHistory(){
+ const data=await api("/api/delivery/history");
+ deliveryHistory=Array.isArray(data)?data:(data.value||[]);
+ renderDeliveryHistory();
+}
+
+async function copyEmailCommand(id){
+ const recipient=prompt("Recipient email:","madhusudan.rai@brickred.in");
+ if(!recipient)return;
+
+ const email=recipient.trim();
+
+ if(!/^[^\s@"']+@[^\s@"']+\.[^\s@"']+$/.test(email)){
+  msg("Invalid recipient email.",true);
+  return;
+ }
+
+ const alreadySent=deliveryHistory.some(d=>
+  String(d.reportId).toLowerCase()===String(id).toLowerCase() &&
+  String(d.recipient||"").toLowerCase()===email.toLowerCase() &&
+  d.deliveryStatus==="Sent"
+ );
+
+ if(alreadySent){
+  alert("Duplicate blocked: This report was already sent to "+email);
+  return;
+ }
+
+ const command='.\\scripts\\Send-ApprovedReport.ps1 -ReportId "'+
+  id+'" -Recipient "'+email+'"';
+
+ // Always show the command, even if clipboard access fails.
+ prompt("Copy this PowerShell command (Ctrl+C, then Cancel):",command);
+
+ msg("Command displayed. Run it in PowerShell 2 only when ready to send.");
+}
+const dateInput=document.getElementById("reportDate");
+const now=new Date();
+dateInput.value=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
+
+function msg(text,error=false){
+ const el=document.getElementById("message");
+ el.textContent=text;
+ el.style.color=error?"#c3343c":"#13834c";
+}
+async function api(url,options={}){
+ const r=await fetch(url,options);
+ if(!r.ok)throw new Error("HTTP "+r.status+": "+(await r.text()).slice(0,200));
+ return r.json();
+}
+async function generateReport(){
+ const b=document.getElementById("generateBtn");
+ b.disabled=true;msg("Generating AI draft...");
+ try{
+  await api("/api/status/workflow/generate?date="+encodeURIComponent(dateInput.value),{method:"POST"});
+  msg("AI draft generated successfully.");
+  await loadReports();
+ }catch(e){msg(e.message,true)}
+ finally{b.disabled=false}
+}
+async function reviewReport(id,action){
+ if(!confirm("Are you sure you want to "+action+" this report?"))return;
+ try{
+  await api("/api/status/workflow/"+encodeURIComponent(id)+"/"+action,{method:"POST"});
+  msg("Report "+(action==="approve"?"approved":"rejected")+".");
+  await loadReports();
+ }catch(e){msg(e.message,true)}
+}
+function el(tag,cls,text){
+ const n=document.createElement(tag);
+ if(cls)n.className=cls;
+ if(text!==undefined)n.textContent=text;
+ return n;
+}
+function renderReports(){
+ const q=document.getElementById("search").value.toLowerCase();
+ const f=document.getElementById("filter").value;
+ const root=document.getElementById("reports");
+ root.replaceChildren();
+ const filtered=allReports.filter(r=>
+  (f==="All"||r.status===f)&&
+  ((r.summary||"")+" "+(r.reportDate||"")+" "+(r.status||"")).toLowerCase().includes(q)
+ );
+ if(!filtered.length){root.appendChild(el("p","empty","No matching reports found."));return}
+ for(const r of filtered){
+  const id=r.reportId||r.id;
+  const status=r.status||"Draft";
+  const card=el("article","report");
+  const top=el("div","report-top");
+  top.appendChild(el("div","report-title","Daily Status Report - "+(r.reportDate||r.date||"")));
+  top.appendChild(el("span","badge "+status,status));
+  card.appendChild(top);
+  card.appendChild(el("div","meta","Activities: "+(r.activityCount??0)));
+  const details=document.createElement("details");
+details.className="report-details";
+const preview=document.createElement("summary");
+preview.textContent="View AI Report";
+details.appendChild(preview);
+details.appendChild(el("div","summary",r.summary||"No summary available."));
+card.appendChild(details);
+  if(status==="Draft"&&id){
+   const actions=el("div","actions");
+   for(const action of ["approve","reject"]){
+    const b=el("button",action==="approve"?"btn-green":"btn-red",action==="approve"?"Approve":"Reject");
+    b.onclick=()=>reviewReport(id,action);
+    actions.appendChild(b);
+   }
+   card.appendChild(actions);
+  }
+   if(status==="Approved"&&id){
+    const sent=deliveryHistory.filter(d=>
+     String(d.reportId).toLowerCase()===String(id).toLowerCase()&&
+     d.deliveryStatus==="Sent"
+    );
+
+    const deliveryText=sent.length
+     ?"Email: Sent to "+sent.map(d=>d.recipient||"recipient").join(", ")
+     :"Email: Not sent via tracked delivery";
+
+    card.appendChild(el("div","meta",deliveryText));
+
+    const actions=el("div","actions");
+    const button=el("button","btn-green","Copy Email Command");
+    button.onclick=()=>copyEmailCommand(id);
+    actions.appendChild(button);
+    card.appendChild(actions);
+   }
+  root.appendChild(card);
+ }
+}
+async function loadReports(){
+ try{
+  const data=await api("/api/status/workflow/reports");
+  allReports=Array.isArray(data)?data:(data.reports||[]);
+  document.getElementById("total").textContent=allReports.length;
+  for(const s of ["Approved","Draft","Rejected"])
+   document.getElementById(s.toLowerCase()).textContent=allReports.filter(r=>r.status===s).length;
+   await loadDeliveryHistory();
+  renderReports();
+ }catch(e){msg("Failed to load reports: "+e.message,true)}
+}
+loadReports();
+</script>
+</body>
+</html>

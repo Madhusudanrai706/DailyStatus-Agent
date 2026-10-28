@@ -1,4 +1,4 @@
-﻿param(
+param(
     [datetime]$WindowStart = (Get-Date).Date.AddDays(-7),
     [datetime]$WindowEnd = (Get-Date),
     [int]$MaxItems = 100
@@ -54,7 +54,15 @@ try {
         }
 
         try {
-            if ($item.Class -ne 43) { continue }
+                        $itemClass = [int]$item.Class
+            $isMeetingInvitation = (
+                $itemClass -eq 53 -and
+                [string]$item.MessageClass -like "IPM.Schedule.Meeting*"
+            )
+
+            if ($itemClass -ne 43 -and -not $isMeetingInvitation) {
+                continue
+            }
 
             $received = [datetime]$item.ReceivedTime
 
@@ -70,7 +78,7 @@ try {
             $mail.Add([pscustomobject]@{
                 ActivityId = $id
                 SourceType = "OutlookMail"
-                Category = "NeedsReview"
+                Category = if ($isMeetingInvitation) { "MeetingInvitation" } else { "NeedsReview" }
                 Title = [string]$item.Subject
                 Summary = "Mail metadata collected; action and relevance unverified"
                 OccurredAt = $received.ToString("o")

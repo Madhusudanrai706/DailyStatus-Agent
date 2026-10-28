@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$OutlookDirectory = ".\data\normalized-evidence",
     [string]$AdoDirectory = ".\data\ado-evidence",
     [string]$OutputDirectory = ".\data\combined-evidence"
@@ -139,9 +139,33 @@ try {
 catch {
     $additionalWarnings += "PR evidence unavailable; report remains pending review."
 }
+# Deduplicate calendar events across Outlook COM and local calendar collectors.
+# Other evidence continues to use ActivityId.
 $unique = @(
     $activities |
-        Group-Object ActivityId |
+        Group-Object -Property {
+            $item = $_
+
+            if ([string]$item.SourceType -eq "OutlookCalendar") {
+                $title = ([string]$item.Title).Trim().ToLowerInvariant()
+                $timestamp = [string]$item.OccurredAt
+
+                try {
+                    $timestamp = ([datetime]$timestamp).ToString(
+                        "yyyy-MM-ddTHH:mm:ss"
+                    )
+                }
+                catch {
+                    # Preserve original timestamp if parsing fails.
+                }
+
+                if ($title -and $timestamp) {
+                    return "CALENDAR|$title|$timestamp"
+                }
+            }
+
+            return "ID|$([string]$item.ActivityId)"
+        } |
         ForEach-Object { $_.Group | Select-Object -First 1 }
 )
 
@@ -191,9 +215,17 @@ $file = Join-Path $OutputDirectory (
     "combined-" + (Get-Date -Format "yyyyMMdd-HHmmss") + ".json"
 )
 
-$result |
-    ConvertTo-Json -Depth 15 |
-    Set-Content $file -Encoding UTF8
+$json = $result | ConvertTo-Json -Depth 15
+
+[System.IO.File]::WriteAllText(
+    [System.IO.Path]::GetFullPath(
+        $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(
+            [string]$file
+        )
+    ),
+    [string]$json,
+    (New-Object System.Text.UTF8Encoding($false))
+)
 
 Write-Host "`n=== COMBINED EVIDENCE ===" -ForegroundColor Cyan
 Write-Host "Outlook activities: $($result.SourceCounts.Outlook)"

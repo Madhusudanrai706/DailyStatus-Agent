@@ -22,6 +22,47 @@ public static class LocalDraftReviewEndpoints
             return await next(context);
         });
 
+        // BRICKRED_SECURE_DRAFT_LIST
+        group.MapGet("/drafts", (IWebHostEnvironment env) =>
+        {
+            var root = Path.GetFullPath(
+                Path.Combine(env.ContentRootPath, ".."));
+
+            var directory = Path.Combine(root, "data", "review-drafts");
+
+            if (!Directory.Exists(directory))
+                return Results.Ok(Array.Empty<object>());
+
+            var drafts = new List<object>();
+
+            foreach (var file in Directory.GetFiles(directory, "draft-*.json"))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(File.ReadAllText(file));
+                    var d = doc.RootElement;
+
+                    string Read(string key) =>
+                        d.TryGetProperty(key, out var value)
+                            ? value.ToString()
+                            : "";
+
+                    drafts.Add(new
+                    {
+                        DraftId = Read("DraftId"),
+                        Status = Read("Status"),
+                        CreatedAt = Read("CreatedAt"),
+                        Text = Read("Text")
+                    });
+                }
+                catch
+                {
+                    // Skip invalid draft files.
+                }
+            }
+
+            return Results.Ok(drafts);
+        });
         group.MapPost("/{id:guid}/approve", async (
             Guid id,
             HttpContext context,

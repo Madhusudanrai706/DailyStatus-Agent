@@ -1,4 +1,4 @@
-﻿using DailyStatus.Api;
+using DailyStatus.Api;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +34,7 @@ app.Use(async (context, next) =>
 // MapDeliverySecurityGuard
 app.MapAzureDevOpsClassificationEndpoints();
 app.MapOutlookEvidenceEndpoints();
+app.MapEvidenceHistoryEndpoints();
 app.MapAdditionalEvidenceEndpoints();
 
 // BRICKRED_LOCAL_API_GUARD

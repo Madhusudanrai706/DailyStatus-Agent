@@ -56,3 +56,8 @@ email-previews/
 
 **/appsettings.json
 
+appsettings.Development.json
+**/.env
+**/.env.*
+*.p12
+*secrets*.json
